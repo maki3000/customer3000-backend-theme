@@ -787,8 +787,9 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$pagesTree = $this->pagesTreeFirstNavItem();
 
 		foreach ($pagesTree as $page) {
-			$icon = $page['icon'] ? $this->renderNavIcon($page['icon']) : '';
-			$out .= "<li class='page-$page[id] pw-page-first'><a id='prnav-page-$page[id]' data-from='prnav-page-$page[id]' href='$page[url]'>$icon $page[title]</a></li>";
+			$icon = isset($page->template->pageLabelField) ? $page->template->pageLabelField : '';
+			$editHref = '/processwire/page/edit/?id=' . $page['id'];
+			$out .= "<li class='page-$page[id] pw-page-first'><a id='prnav-page-$page[id]' data-from='prnav-page-$page[id]' href='$editHref'><i class='fa fa-lg pw-nav-icon fa-fw $icon'></i>$page[title]</a></li>";
 		}
 
 		foreach($items as $item) {
