@@ -15,6 +15,7 @@ var ProcessWireAdminTheme = {
 		this.setupInputfields();
 		this.setupTooltips();
 		this.checkLayout();
+		this.setupPagesNavActive();
 	}, 
 
 	/**
@@ -903,6 +904,18 @@ var ProcessWireAdminTheme = {
 			return true;
 		}
 		return false;
+	},
+
+	/**
+	 * Set pages main navigation active
+	 *
+	 */
+	setupPagesNavActive: function() {
+		$('.pw-page-first').each(function () {
+			if ($(this).hasClass('uk-active')) {
+				$('.pw-page').removeClass('uk-active');
+			}
+		});
 	}
 };
 $(document).ready(function() {

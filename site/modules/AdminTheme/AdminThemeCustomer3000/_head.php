@@ -21,6 +21,7 @@ $themeUrl = '/site/modules/AdminTheme/AdminThemeCustomer3000/';
 $styles = $config->styles;
 $scripts = $config->scripts;
 
+$styles->prepend($adminTheme->getCustomer3000CSS());
 $styles->prepend($rootUrl . "wire/templates-admin/styles/AdminTheme.css?v=$version");
 $styles->prepend($adminTheme->getUikitCSS());
 $styles->append($rootUrl . "wire/templates-admin/styles/font-awesome/css/font-awesome.min.css?v=$version");

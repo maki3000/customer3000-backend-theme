@@ -685,7 +685,7 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	protected function renderPrimaryNavItem(array $item) {
 
 		$title = $item['title'];
-		$out = "<li class='page-$item[id]-'>";
+		$out = "<li class='pw-page page-$item[id]-'>";
 
 		if(!count($item['children'])) {
 			$out .= "<a href='$item[url]'>$title</a></li>";
@@ -719,6 +719,7 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	protected function pagesTreeFirstNavItem() {
 		$homePage = $this->wire('pages')->get(1);
 		$pagesTreeFirst = [];
+		$pagesTreeFirst[] = $homePage;
 
 		foreach ($homePage->children as $key => $child) {
 			$pagesTreeFirst[] = $child;
@@ -767,6 +768,42 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	}
 
 	/**
+	 * Renders second level pages
+	 *
+	 * @return string
+	 *
+	 */
+	public function renderSideNavChildren() {
+		$pagesTree = $this->pagesTreeFirstNavItem();
+		$secondLevelPages = [];
+		$out = '';
+
+		foreach ($pagesTree as $firstLevelPages) {
+			if ($firstLevelPages->hasChildren) {
+				foreach ($firstLevelPages['children'] as $secondaryPages) {
+					if ($secondaryPages instanceof Page && $secondaryPages->hasChildren) {
+						foreach ($secondaryPages['children'] as $tertiaryPages) {
+							// TODO: ev. create method out of this (also used in renderPrimaryNavItems)
+							$icon     = isset( $tertiaryPages->template->pageLabelField ) ? $tertiaryPages->template->pageLabelField : '';
+							$editHref = '/processwire/page/edit/?id=' . $tertiaryPages['id'];
+							$out      .= "<li class='parent-page-$secondaryPages[id] page-$tertiaryPages[id] pw-page-second'>";
+							$out      .= "<a id='scnav-page-$tertiaryPages[id]' data-from='scnav-page-$tertiaryPages[id]' href='$editHref'>";
+							$out      .= "<i class='fa fa-lg pw-nav-icon fa-fw $icon'></i>$tertiaryPages[title]";
+							$out      .= "</a>";
+							$out      .= "</li>";
+						}
+					}
+				}
+			}
+
+			//$secondLevelPages[] = $page;
+
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Render all top navigation items, ready to populate in ul#prnav
 	 *
 	 * @return string
@@ -783,21 +820,29 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$out = '';
 		$items = $this->getPrimaryNavArray();
 
-		// customer3000: get pages/tree
+		// customer3000: get and set first home children
 		$pagesTree = $this->pagesTreeFirstNavItem();
-
 		foreach ($pagesTree as $page) {
 			$icon = isset($page->template->pageLabelField) ? $page->template->pageLabelField : '';
 			$editHref = '/processwire/page/edit/?id=' . $page['id'];
-			$out .= "<li class='page-$page[id] pw-page-first'><a id='prnav-page-$page[id]' data-from='prnav-page-$page[id]' href='$editHref'><i class='fa fa-lg pw-nav-icon fa-fw $icon'></i>$page[title]</a></li>";
+			$out .= "<li class='page-content-$page[id]- pw-page-first'>";
+				$out .= "<a id='prnav-page-$page[id]' data-from='prnav-page-$page[id]' href='$editHref'>";
+					$out .= "<i class='fa fa-lg pw-nav-icon fa-fw $icon'></i>$page[title]";
+				$out .= "</a>";
+			$out .= "</li>";
 		}
 
-		foreach($items as $item) {
-			$out .= $this->renderPrimaryNavItem($item);
+		if ($this->wire->user->hasRole('superuser')) {
+			foreach ( $items as $item ) {
+				$out .= $this->renderPrimaryNavItem( $item );
+			}
 		}
 
 		if(!self::dev) $this->wire('session')->setFor($this, 'prnav', $out);
 		$this->markCurrentNavItems($out);
+
+		// also set pages nav item active
+		$this->markCurrentPagesNavItems($out);
 
 		return $out;
 	}
@@ -907,6 +952,59 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$page = $this->wire('page');
 		foreach($page->parents()->and($page) as $p) {
 			$out = str_replace("page-$p-", "page-$p- uk-active", $out);
+		}
+	}
+
+	/**
+	 * Returns the first direct home child page or the home page
+	 *
+	 * @param Page $activePage
+	 * @return Page
+	 *
+	 */
+	protected function getFirstHomeChild($activePage): Page {
+		$firstHomeChild = $activePage;
+		if ($firstHomeChild->id === 1) {
+			return $firstHomeChild;
+		} else if (isset($firstHomeChild->parent) && $firstHomeChild->parent->id === 1) {
+			return $firstHomeChild;
+		} else if (isset($firstHomeChild->parent)) {
+			return $this->getFirstHomeChild($firstHomeChild->parent);
+		} else {
+			return $activePage;
+		}
+	}
+
+	public function getFirstHomeChildId() {
+		$pageId = $this->wire->input->get('id');
+		$activePage = $this->wire->pages->get($pageId);
+
+		return $this->getFirstHomeChild($activePage)->id;
+	}
+
+	/**
+	 * Identify current pages items in the primary nav and add appropriate classes to them
+	 *
+	 * This presumes that navigation items in given $out markup use "page-[id]-" classes,
+	 * which will be updated consistent with the current $page.
+	 *
+	 * @param $out
+	 *
+	 */
+	protected function markCurrentPagesNavItems(&$out) {
+		$homePage = $this->wire('pages')->get(1);
+		$pageId = $this->wire->input->get('id');
+		$activePage = $this->wire->pages->get($pageId);
+
+		if (isset($pageId) && $activePage->parent->id !== 1) {
+			$firstHomeChild = $this->getFirstHomeChild($activePage);
+		} else {
+			$firstHomeChild = $activePage;
+		}
+
+		foreach($homePage->children as $p) {
+			$navPageId = $firstHomeChild->id;
+			$out = str_replace("page-content-$navPageId-", "page-content-$pageId- uk-active", $out);
 		}
 	}
 
@@ -1150,6 +1248,18 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$css = new AdminThemeCustomer3000Css($this, $settings);
 		
 		return $css->getCssFile();
+	}
+
+	/**
+	 * Get the customer3000 CSS URL to use
+	 *
+	 * @return string
+	 *
+	 */
+	public function getCustomer3000CSS() {
+		// TODO: ev. adjust with images, etc. like ___getUikitCSS()
+		$path = '/site/modules/AdminTheme/AdminThemeCustomer3000/customer3000-pw/customer3000.css';
+		return $path;
 	}
 	
 	/**

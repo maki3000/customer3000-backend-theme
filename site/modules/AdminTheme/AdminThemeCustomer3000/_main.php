@@ -52,7 +52,10 @@ if(!isset($content)) $content = '';
 	} else {
 		$adminTheme->includeFile('_masthead.php');
 	}
-	
+
+    // add left aside
+	$adminTheme->includeFile('_left-aside.php');
+
 	$headline = $adminTheme->getHeadline();
 	$headlinePos = strpos($content, "$headline</h1>");
 	if($headlinePos && $headlinePos > 500) $headline = '';

@@ -30,7 +30,7 @@ $logoOptions = array('height' => '40px');
 					<?php if($adminTheme->isLoggedIn): ?>
 					<ul class='uk-navbar-nav pw-primary-nav'>
 						<?php echo $adminTheme->renderPrimaryNavItems(); ?>
-					</ul>	
+					</ul>
 					<?php endif; ?>
 				</div>
 				<?php if($adminTheme->isLoggedIn): ?>
