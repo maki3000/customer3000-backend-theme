@@ -639,6 +639,26 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		return $out;
 	}
 
+	// TODO: @params and @return
+	public function isPageView(): bool {
+		$pageId = $this->wire->input->get('id');
+		$pagesTree = $this->pagesTreeFirstNavItem();
+
+		foreach ($pagesTree as $firstLevelPages) {
+			if ( $firstLevelPages->hasChildren ) {
+				foreach ( $firstLevelPages['children'] as $secondaryPages ) {
+					if ( $secondaryPages instanceof Page && $secondaryPages->hasChildren ) {
+						$firstHomeChildId = $this->getFirstHomeChildIdById( $secondaryPages->id );
+						if ( $firstHomeChildId === intval( $pageId ) ) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Render runtime notices div#notices
 	 *
@@ -648,6 +668,11 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	 *
 	 */
 	public function renderNotices($notices, array $options = array()) {
+		$itemMarkupCssClasses = 'pw-container uk-container uk-container-expand';
+		if ($this->isPageView()) {
+			// remove pw-container for pages
+			$itemMarkupCssClasses = str_replace('pw-container', '', $itemMarkupCssClasses);
+		}
 
 		$defaults = array(
 			'groupByType' => $this->groupNotices ? true : false, 
@@ -664,7 +689,7 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 			'listMarkup' => "<ul class='pw-notices' id='notices'>{out}</ul><!--/notices-->",
 			'itemMarkup' =>
 				"<li class='{class}'>" .
-					"<div class='pw-container uk-container uk-container-expand'>{remove}{icon}{text}</div>" .
+					"<div class='$itemMarkupCssClasses'>{remove}{icon}{text}</div>" .
 				"</li>"
 		);
 
@@ -710,6 +735,22 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		return $out;
 	}
 
+	// TODO...
+	protected function isTemplatePage($page) {
+		$pageId = $this->wire->input->get('id');
+
+		if (isset($pageId) && $page !== intval($pageId)) {
+			if ($page->id === intval($pageId)) {
+				return true;
+			}
+			foreach ($page->children as $key => $child) {
+				return $this->isTemplatePage($child);
+			}
+		} else {
+			return false;
+		}
+	}
+
 	/**
 	 * Returns home pages children array
 	 *
@@ -721,7 +762,8 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$pagesTreeFirst = [];
 		$pagesTreeFirst[] = $homePage;
 
-		foreach ($homePage->children as $key => $child) {
+		foreach ($homePage->children("include=hidden, template!=admin, title!='404 Not Found'") as $key => $child) {
+		//foreach ($homePage->children("include=hidden") as $key => $child) {
 			$pagesTreeFirst[] = $child;
 		}
 
@@ -774,14 +816,23 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	 *
 	 */
 	public function renderSideNavChildren() {
+		$pageId = $this->wire->input->get('id');
 		$pagesTree = $this->pagesTreeFirstNavItem();
-		$secondLevelPages = [];
 		$out = '';
 
 		foreach ($pagesTree as $firstLevelPages) {
 			if ($firstLevelPages->hasChildren) {
 				foreach ($firstLevelPages['children'] as $secondaryPages) {
+
 					if ($secondaryPages instanceof Page && $secondaryPages->hasChildren) {
+						$firstHomeChildId = $this->getFirstHomeChildIdById($secondaryPages->id);
+						$childrenSideBarCssClasses = 'sidebar-first-subpages sidebar-nav pw-secondary-nav';
+
+						if ($firstHomeChildId !== intval($pageId)) {
+							$childrenSideBarCssClasses .= ' sidebar-first-subpages--hidden';
+						}
+						$out .= "<ul id='child-pageid__$firstHomeChildId' class='$childrenSideBarCssClasses'>";
+
 						foreach ($secondaryPages['children'] as $tertiaryPages) {
 							// TODO: ev. create method out of this (also used in renderPrimaryNavItems)
 							$icon     = isset( $tertiaryPages->template->pageLabelField ) ? $tertiaryPages->template->pageLabelField : '';
@@ -792,13 +843,35 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 							$out      .= "</a>";
 							$out      .= "</li>";
 						}
+
+						$out .= '</ul>';
 					}
 				}
 			}
-
-			//$secondLevelPages[] = $page;
-
 		}
+
+		return $out;
+	}
+
+	// TODO
+	public function renderPrimaryPagesNavItems(): string {
+		$out = '';
+
+		// customer3000: get and set first home children
+		$pagesTree = $this->pagesTreeFirstNavItem();
+		foreach ($pagesTree as $page) {
+			$icon = isset($page->template->pageLabelField) ? $page->template->pageLabelField : '';
+			$editHref = '/processwire/page/edit/?id=' . $page['id'];
+			$out .= "<li class='page-content-$page[id]- pw-page-first'>";
+			$out .= "<a id='prnav-page-$page[id]' class='pw-page-link' data-from='prnav-page-$page[id]' href='$editHref'>";
+			$out .= "<i class='pw-page-icon fa fa-lg pw-nav-icon fa-fw $icon'></i>";
+			$out .= "<span class='pw-page-link-title'>$page[title]</span>";
+			$out .= "</a>";
+			$out .= "</li>";
+		}
+
+		// set pages nav item active
+		$this->markCurrentPagesNavItems($out);
 
 		return $out;
 	}
@@ -820,29 +893,12 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$out = '';
 		$items = $this->getPrimaryNavArray();
 
-		// customer3000: get and set first home children
-		$pagesTree = $this->pagesTreeFirstNavItem();
-		foreach ($pagesTree as $page) {
-			$icon = isset($page->template->pageLabelField) ? $page->template->pageLabelField : '';
-			$editHref = '/processwire/page/edit/?id=' . $page['id'];
-			$out .= "<li class='page-content-$page[id]- pw-page-first'>";
-				$out .= "<a id='prnav-page-$page[id]' data-from='prnav-page-$page[id]' href='$editHref'>";
-					$out .= "<i class='fa fa-lg pw-nav-icon fa-fw $icon'></i>$page[title]";
-				$out .= "</a>";
-			$out .= "</li>";
-		}
-
-		if ($this->wire->user->hasRole('superuser')) {
-			foreach ( $items as $item ) {
-				$out .= $this->renderPrimaryNavItem( $item );
-			}
+		foreach ( $items as $item ) {
+			$out .= $this->renderPrimaryNavItem( $item );
 		}
 
 		if(!self::dev) $this->wire('session')->setFor($this, 'prnav', $out);
 		$this->markCurrentNavItems($out);
-
-		// also set pages nav item active
-		$this->markCurrentPagesNavItems($out);
 
 		return $out;
 	}
@@ -956,42 +1012,15 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	}
 
 	/**
-	 * Returns the first direct home child page or the home page
-	 *
-	 * @param Page $activePage
-	 * @return Page
-	 *
-	 */
-	protected function getFirstHomeChild($activePage): Page {
-		$firstHomeChild = $activePage;
-		if ($firstHomeChild->id === 1) {
-			return $firstHomeChild;
-		} else if (isset($firstHomeChild->parent) && $firstHomeChild->parent->id === 1) {
-			return $firstHomeChild;
-		} else if (isset($firstHomeChild->parent)) {
-			return $this->getFirstHomeChild($firstHomeChild->parent);
-		} else {
-			return $activePage;
-		}
-	}
-
-	public function getFirstHomeChildId() {
-		$pageId = $this->wire->input->get('id');
-		$activePage = $this->wire->pages->get($pageId);
-
-		return $this->getFirstHomeChild($activePage)->id;
-	}
-
-	/**
 	 * Identify current pages items in the primary nav and add appropriate classes to them
 	 *
-	 * This presumes that navigation items in given $out markup use "page-[id]-" classes,
+	 * This presumes that navigation items in given $out markup use "page-content-[id]-" classes,
 	 * which will be updated consistent with the current $page.
 	 *
 	 * @param $out
 	 *
 	 */
-	protected function markCurrentPagesNavItems(&$out) {
+	protected function markCurrentPagesNavItems(&$out): void {
 		$homePage = $this->wire('pages')->get(1);
 		$pageId = $this->wire->input->get('id');
 		$activePage = $this->wire->pages->get($pageId);
@@ -1007,6 +1036,79 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 			$out = str_replace("page-content-$navPageId-", "page-content-$pageId- uk-active", $out);
 		}
 	}
+
+	/**
+	 * Returns the first direct home child page or the home page
+	 *
+	 * @param Page $activePage
+	 *
+	 * @return Page
+	 *
+	 */
+	protected function getFirstHomeChild( Page $activePage): Page {
+		$firstHomeChild = $activePage;
+		if ($firstHomeChild->id === 1) {
+			return $firstHomeChild;
+		} else if (isset($firstHomeChild->parent) && $firstHomeChild->parent->id === 1) {
+			return $firstHomeChild;
+		} else if (isset($firstHomeChild->parent)) {
+			return $this->getFirstHomeChild($firstHomeChild->parent);
+		} else {
+			return $activePage;
+		}
+	}
+
+	/**
+	 * Returns the first direct home child ID page or the home page ID
+	 *
+	 * @param Page $activePage
+	 *
+	 * @return int
+	 *
+	 */
+	public function getFirstHomeChildIdByParam(): int {
+		$pageId = $this->wire->input->get('id');
+		$activePage = $this->wire->pages->get($pageId);
+
+		return $this->getFirstHomeChild($activePage)->id;
+	}
+
+	/**
+	 * Returns the first direct home child ID page or the home page ID
+	 *
+	 * @param Page $activePage
+	 *
+	 * @return int
+	 *
+	 */
+	public function getFirstHomeChildIdById($pageId): int {
+		$activePage = $this->wire->pages->get($pageId);
+
+		return $this->getFirstHomeChild($activePage)->id;
+	}
+
+	/**
+	 * Returns a boolean if current page has children and is active
+	 *
+	 * @param Page $activePage
+	 *
+	 * @return int
+	 *
+	 */
+	/*
+	public function isSidebarVisible(): int {
+		$subpagesVisible = false;
+		$pageId = $this->wire->input->get('id');
+		$activePage = $this->wire->pages->get($pageId);
+		$firstHomeChild = $this->getFirstHomeChild($activePage);
+
+		if (isset($pageId) && $firstHomeChild->hasChildren) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	*/
 
 	/**
 	 * Render label for user masthead dropdown nav item
@@ -1139,7 +1241,7 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$logoURL = $this->get('logoURL');
 		$logoQS = '';
 		$svg = false;
-		
+
 		if(empty($logoURL) || $options['getNative'] || strpos($logoURL, '//') !== false) {
 			$native = true;
 			$logoURL = $this->url() . self::logo;
@@ -1169,7 +1271,7 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		}
 		
 		if($logoQS) $logoURL .= '?' . $sanitizer->entities($logoQS);
-		
+
 		$img = "<img src='$logoURL' $attr/>";
 		
 		return $options['getURL'] ? $logoURL : $img;
@@ -1193,7 +1295,8 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	 *
 	 */
 	public function url() {
-		return $this->wire()->config->urls->modules . 'AdminTheme/AdminThemeCustomer3000/';
+		//return $this->wire()->config->urls->modules . 'AdminTheme/AdminThemeCustomer3000/';
+		return $this->wire()->config->urls->site . 'modules/AdminTheme/AdminThemeCustomer3000/';
 	}
 	
 	/**
@@ -1251,6 +1354,18 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	}
 
 	/**
+	 * Get the lucide icons CSS URL to use
+	 *
+	 * @return string
+	 *
+	 */
+	public function getLucideIconsCSS() {
+		// TODO: ev. adjust with images, etc. like ___getUikitCSS()
+		$path = '/site/modules/AdminTheme/AdminThemeCustomer3000/customer3000-pw/lucide-font/lucide.css';
+		return $path;
+	}
+
+	/**
 	 * Get the customer3000 CSS URL to use
 	 *
 	 * @return string
@@ -1261,7 +1376,7 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$path = '/site/modules/AdminTheme/AdminThemeCustomer3000/customer3000-pw/customer3000.css';
 		return $path;
 	}
-	
+
 	/**
 	 * Get Javascript that must be present in the document <head>
 	 *
@@ -1281,6 +1396,36 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	}
 
 	/**
+	 * Return the lucide icon name used by this template
+	 *
+	 * #pw-group-identification
+	 *
+	 * @param bool $prefix Specify true if you want the icon prefix (icon- or fa-) to be included (default=false).
+	 * @return string Returns a font-awesome icon name
+	 *
+	 */
+	/*
+	public function getLucideIcon($prefix = false) {
+		$label = 'Lucide Icons';
+		$icon = '';
+		if(strpos($label, 'icon-') !== false || strpos($label, 'fa-') !== false) {
+			if(preg_match('/\b(icon-|fa-)([^\s,]+)/', $label, $matches)) {
+				if($matches[1] == 'icon-') $matches[1] = 'fa-';
+				$icon = $prefix ? $matches[1] . $matches[2] : $matches[2];
+			}
+		}
+		return $icon;
+	}
+	*/
+
+	// TODO
+	/*
+	protected function ___buildEditForm(Template $template) {
+		parent::___buildEditForm($template);
+	}
+	*/
+
+	/**
 	 * Module configuration
 	 * 
 	 * @param InputfieldWrapper $inputfields
@@ -1289,6 +1434,38 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	public function getModuleConfigInputfields(InputfieldWrapper $inputfields) {
 		parent::getModuleConfigInputfields($inputfields);
 		include_once(__DIR__ . '/config.php');
+
+		//$languages = $this->wire()->languages;
+		//$modules = $this->wire()->modules;
+		//$config = $this->wire()->config;
+
+		//// view lucide icon
+		///*
+		//$fieldset = $this->wire('modules')->get("InputfieldFieldset");
+		//$fieldset->label = $this->_('Customer3000 Admin Theme specific');
+
+		//$field = $this->wire('modules')->get("InputfieldIcon");
+		//$field->attr('name', "home");
+		//$field->label = $this->_("Top Navigation: View Home Page");
+		//$field->columnWidth = 50;
+		//$field->attr('value', array_key_exists('home', self::$defaultIcons) ? self::$defaultIcons['home'] : "fa-home");
+		//if (isset($data['home'])) $field->attr('value', $data['home']);
+		//$fieldset->add($field);
+
+		//$inputfields->add($fieldset);
+		//*/
+
+		//$icon = $this->getLucideIcon(true);
+		///** @var InputfieldIcon  $f */
+		//$f = $modules->get("InputfieldIcon");
+		//$f->attr('name', 'pageLabelIcon');
+		//$f->attr('value', $icon);
+		//$f->icon = $icon ? $icon : 'puzzle-piece';
+		//$f->label = $this->_('Icon');
+		//$f->description = $this->_('Select an icon that will be associated with this template and pages using this template (in the admin).');
+		//$f->collapsed = Inputfield::collapsedBlank;
+		//$inputfields->add($f);
+
 		$configHelper = new AdminThemeCustomer3000ConfigHelper($this);
 		$configHelper->configModule($inputfields);
 	}

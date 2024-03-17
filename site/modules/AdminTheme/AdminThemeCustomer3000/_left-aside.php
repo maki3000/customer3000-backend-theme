@@ -14,8 +14,6 @@ $logoOptions = array('height' => '40px');
 ?>
 <aside id="left-aside">
 	<?php if($adminTheme->isLoggedIn): ?>
-		<ul id="child-pageid__<?php echo $adminTheme->getFirstHomeChildId(); ?>" class='sidebar-first-subpages sidebar-nav pw-secondary-nav'>
-			<?php echo $adminTheme->renderSideNavChildren(); ?>
-		</ul>
+		<?php echo $adminTheme->renderSideNavChildren(); ?>
 	<?php endif; ?>
 </aside>

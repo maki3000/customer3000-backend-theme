@@ -53,20 +53,32 @@ if(!isset($content)) $content = '';
 		$adminTheme->includeFile('_masthead.php');
 	}
 
-    // add left aside
-	$adminTheme->includeFile('_left-aside.php');
+    ?>
 
-	$headline = $adminTheme->getHeadline();
-	$headlinePos = strpos($content, "$headline</h1>");
-	if($headlinePos && $headlinePos > 500) $headline = '';
-	
-	$adminTheme->includeFile('_content.php', array(
-		'headline' => $headline, 
-		'content' => &$content, 
-		'layout' => $layout
-	));
-	
-	if(!$adminTheme->isModal) {
+    <div class="main-content <?= $adminTheme->isPageView() ? 'pw-page-view' : ''; ?>">
+
+        <?php
+
+        // add left aside
+        $adminTheme->includeFile('_left-aside.php');
+
+        $headline = $adminTheme->getHeadline();
+        $headlinePos = strpos($content, "$headline</h1>");
+        if($headlinePos && $headlinePos > 500) $headline = '';
+
+        $adminTheme->includeFile('_content.php', array(
+            'headline' => $headline,
+            'content' => &$content,
+            'layout' => $layout
+        ));
+
+        ?>
+
+    </div>
+
+    <?php
+
+    if(!$adminTheme->isModal) {
 		$adminTheme->includeFile('_footer.php');
 		if($adminTheme->isLoggedIn && strpos($layout, 'sidenav') !== 0) {
 			$adminTheme->includeFile('_offcanvas.php');
@@ -76,7 +88,7 @@ if(!isset($content)) $content = '';
 	echo $adminTheme->renderExtraMarkup('body');
 	$adminTheme->includeFile('_body-scripts.php', array('layout' => $layout));
 	?>
-	
+
 </body>
 </html><?php
 

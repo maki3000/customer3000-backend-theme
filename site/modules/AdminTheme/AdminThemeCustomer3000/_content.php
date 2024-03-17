@@ -15,7 +15,7 @@ if(!defined("PROCESSWIRE")) die();
 
 ?>
 
-<main id='main' class='pw-container uk-container uk-container-expand uk-margin uk-margin-large-bottom'>
+<main id='main' class='<?= $adminTheme->isPageView() ? '' : 'pw-container'; ?> uk-container uk-container-expand uk-margin uk-margin-large-bottom'>
 	<div class='pw-content' id='content'>
 		<?php 
 		$adminTheme->includeFile('_content-head.php', array('layout' => $layout, 'headline' => $headline)); 

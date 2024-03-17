@@ -188,12 +188,15 @@ var ProcessWireAdminTheme = {
 		if(height > maxHeight) {
 			// hide masthead, show mobile masthead
 			if(!$masthead.hasClass('pw-masthead-hidden')) {
+				// INFO: masthead is draggable
+				/*
 				$masthead.addClass('pw-masthead-hidden').css({
 					position: 'absolute',
 					top: '-9999px'
 				});
 				$mastheadMobile.removeClass('uk-hidden');
 				$("#offcanvas-toggle").removeClass('uk-hidden');
+				*/
 			}
 		} else {
 			// show masthead, hide mobile masthead
@@ -911,10 +914,31 @@ var ProcessWireAdminTheme = {
 	 *
 	 */
 	setupPagesNavActive: function() {
+		// active menu item
 		$('.pw-page-first').each(function () {
 			if ($(this).hasClass('uk-active')) {
 				$('.pw-page').removeClass('uk-active');
 			}
+		});
+
+		// draggable
+		$('#pw-primary-pages-nav').draggable({
+			axis: 'x',
+			//containment: 'parent', // TODO: find out why working with containment does not work (ev. CSS)
+			cursor: 'move',
+			opacity: 0.9,
+			drag: function( event, ui ) {
+				let draggableContainerWidth = $('.pw-primary-pages-nav-container').outerWidth();
+				let draggableNavWidth = $(this).outerWidth();
+				let maxLeft = draggableNavWidth - draggableContainerWidth;
+
+				if (ui.position.left > 0) {
+					ui.position.left = 0;
+				}
+				if (ui.position.left < -maxLeft) {
+					ui.position.left = -maxLeft;
+				}
+			},
 		});
 	}
 };

@@ -21,16 +21,23 @@ $logoOptions = array('height' => '40px');
 		</div>	
 	</header>
 	<header id='pw-masthead' class='pw-masthead uk-background-muted' data-pw-height='80'> <?php /* data-pw-height='73' */ ?>
-		<div class='pw-container uk-container uk-container-expand'>
+		<div class='pw-container-draggable uk-container uk-container-expand'>
 			<nav class='uk-navbar uk-navbar-container uk-navbar-transparent' uk-navbar>
 				<div class='uk-navbar-left'>
 					<a class="pw-logo-link uk-logo uk-margin-right" href='<?php echo $adminTheme->isLoggedIn ? $config->urls->admin : $config->urls->root; ?>'>
 						<?php echo $adminTheme->getLogo($logoOptions); ?>
 					</a>
 					<?php if($adminTheme->isLoggedIn): ?>
-					<ul class='uk-navbar-nav pw-primary-nav'>
-						<?php echo $adminTheme->renderPrimaryNavItems(); ?>
-					</ul>
+                        <div class="pw-primary-pages-nav-container">
+                            <span class="left-fade-out"></span>
+                            <ul id="pw-primary-pages-nav" class='uk-navbar-nav pw-primary-pages-nav'>
+                                <?php echo $adminTheme->renderPrimaryPagesNavItems(); ?>
+                            </ul>
+                            <span class="right-fade-out"></span>
+                        </div>
+                        <ul class='uk-navbar-nav pw-primary-nav'>
+                            <?php echo $adminTheme->renderPrimaryNavItems(); ?>
+                        </ul>
 					<?php endif; ?>
 				</div>
 				<?php if($adminTheme->isLoggedIn): ?>

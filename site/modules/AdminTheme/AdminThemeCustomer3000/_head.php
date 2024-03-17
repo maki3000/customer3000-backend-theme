@@ -21,6 +21,7 @@ $themeUrl = '/site/modules/AdminTheme/AdminThemeCustomer3000/';
 $styles = $config->styles;
 $scripts = $config->scripts;
 
+//$styles->prepend($adminTheme->getLucideIconsCSS());
 $styles->prepend($adminTheme->getCustomer3000CSS());
 $styles->prepend($rootUrl . "wire/templates-admin/styles/AdminTheme.css?v=$version");
 $styles->prepend($adminTheme->getUikitCSS());
@@ -30,7 +31,7 @@ $ext = $config->debug ? "js" : "min.js";
 $scripts->append($rootUrl . "wire/templates-admin/scripts/inputfields.$ext?v=$version");
 $scripts->append($rootUrl . "wire/templates-admin/scripts/main.$ext?v=$version");
 $scripts->append($themeUrl . "customer3000/dist/js/customer3000.min.js?v=$version");
-$scripts->append($themeUrl . "customer3000/dist/js/customer3000-icons.min.js?v=$version");
+$scripts->append($themeUrl . "customer3000/dist/js/customer3000.min.js?v=$version");
 $scripts->append($themeUrl . "scripts/main.js?v=$version");
 
 ?>
