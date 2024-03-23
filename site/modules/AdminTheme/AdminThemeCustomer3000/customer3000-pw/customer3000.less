@@ -1,86 +1,92 @@
 @header-background: #1C2836;
 @admin-logo-min-width: 8rem;
 
-#pw-masthead {
-    background-color: @header-background;
-    max-width: 100%;
-    position: relative;
-    width: 100%;
+#pw-mastheads {
+    #pw-masthead {
+        background-color: @header-background;
+        max-width: 100%;
+        position: relative;
+        width: 100%;
 
-    .pw-container-draggable {
-        padding-inline: 1rem;
+        .pw-container-draggable {
+            padding-inline: 1rem;
 
-        .uk-logo {
-            min-width: @admin-logo-min-width;
-        }
-
-        .uk-navbar {
-            .uk-navbar-left,
-            .uk-navbar-right {
-                flex-wrap: nowrap;
+            .uk-logo {
+                min-width: @admin-logo-min-width;
             }
 
-            .uk-navbar-left {
-                display: grid;
-                grid-template-columns: @admin-logo-min-width auto 1fr;
-                position: relative;
-                width: 100%;
-
-                .pw-primary-pages-nav-container {
-                    display: flex;
+            .uk-navbar {
+                .uk-navbar-left,
+                .uk-navbar-right {
                     flex-wrap: nowrap;
-                    overflow: hidden;
+                }
+
+                .uk-navbar-left {
+                    display: grid;
+                    grid-template-columns: @admin-logo-min-width auto 1fr;
                     position: relative;
-                    white-space: nowrap;
+                    width: 100%;
 
-                    .pw-primary-pages-nav {
-                        padding-inline: 1rem;
+                    .pw-primary-pages-nav-container {
+                        display: flex;
+                        flex-wrap: nowrap;
+                        overflow: hidden;
+                        position: relative;
+                        white-space: nowrap;
 
-                        .pw-page-link {
-                            align-items: center;
-                            display: flex;
-                            flex-direction: column;
-                            justify-content: center;
-
-                            .pw-page-link-title {
-                                margin-top: 0.25rem;
-                            }
-                        }
-
-                        &.ui-draggable-dragging {
-                            cursor: grabbing;
+                        .pw-primary-pages-nav {
+                            padding-inline: 1rem;
 
                             .pw-page-link {
-                                cursor: grabbing;
+                                align-items: center;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
+
+                                .pw-page-link-title {
+                                    margin-top: 0.25rem;
+                                }
                             }
+
+                            &.ui-draggable-dragging {
+                                cursor: grabbing;
+
+                                .pw-page-link {
+                                    cursor: grabbing;
+                                }
+                            }
+                        }
+
+                        .left-fade-out,
+                        .right-fade-out {
+                            display: inline-block;
+                            height: 100%;
+                            position: absolute;
+                            width: 2rem;
+                            z-index: 10;
+                        }
+
+                        .left-fade-out {
+                            background: linear-gradient(90deg, rgba(28, 40, 54, 1) 0%, rgba(255, 255, 255, 0) 100%);
+                            left: 0;
+                        }
+
+                        .right-fade-out {
+                            background: linear-gradient(-90deg, rgba(28, 40, 54, 1) 0%, rgba(255, 255, 255, 0) 100%);
+                            right: 0;
                         }
                     }
 
-                    .left-fade-out,
-                    .right-fade-out {
-                        display: inline-block;
-                        height: 100%;
-                        position: absolute;
-                        width: 2rem;
-                        z-index: 10;
+                    .pw-primary-nav {
+                        justify-self: end;
                     }
-
-                    .left-fade-out {
-                        background: linear-gradient(90deg, rgba(28, 40, 54, 1) 0%, rgba(255, 255, 255, 0) 100%);
-                        left: 0;
-                    }
-
-                    .right-fade-out {
-                        background: linear-gradient(-90deg, rgba(28, 40, 54, 1) 0%, rgba(255, 255, 255, 0) 100%);
-                        right: 0;
-                    }
-                }
-
-                .pw-primary-nav {
-                    justify-self: end;
                 }
             }
         }
+    }
+
+    .pw-notices {
+        margin-bottom: 0;
     }
 }
 
@@ -91,7 +97,8 @@
     grid-template-columns: 0.2fr minmax(auto, 1fr);
     width: 100%;
 
-    .left-aside {
+    #left-aside {
+        background-color: #ededed;
         grid-area: aside;
     }
     #main {
@@ -102,10 +109,18 @@
     }
 }
 
-.pw-container {
-    width: 100%;
-}
-
-.sidebar-first-subpages--hidden {
+.sidebar-first-subpages {
     display: none;
+    list-style: none;
+
+    .pw-page-second {
+        margin-bottom: 8px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}
+.sidebar-first-subpages--shown {
+    display: block;
 }

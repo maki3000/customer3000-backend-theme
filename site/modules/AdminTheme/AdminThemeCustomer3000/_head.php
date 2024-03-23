@@ -16,8 +16,7 @@ if(!defined("PROCESSWIRE")) die();
 
 $version = $adminTheme->version . 'g';
 $rootUrl = $config->urls->root;
-//$themeUrl = $adminTheme->url(); // TODO: how to change this?
-$themeUrl = '/site/modules/AdminTheme/AdminThemeCustomer3000/';
+$themeUrl = $adminTheme->url(); // TODO: how to change this?
 $styles = $config->styles;
 $scripts = $config->scripts;
 

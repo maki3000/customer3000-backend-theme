@@ -639,17 +639,28 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		return $out;
 	}
 
-	// TODO: @params and @return
+	/**
+	 * Check if admin page has subpages sidebar
+	 *
+	 * @return bool
+	 *
+	 */
 	public function isPageView(): bool {
 		$pageId = $this->wire->input->get('id');
 		$pagesTree = $this->pagesTreeFirstNavItem();
 
-		foreach ($pagesTree as $firstLevelPages) {
-			if ( $firstLevelPages->hasChildren ) {
-				foreach ( $firstLevelPages['children'] as $secondaryPages ) {
-					if ( $secondaryPages instanceof Page && $secondaryPages->hasChildren ) {
-						$firstHomeChildId = $this->getFirstHomeChildIdById( $secondaryPages->id );
-						if ( $firstHomeChildId === intval( $pageId ) ) {
+		foreach ($pagesTree as $firstLevelPage) {
+			if ( $firstLevelPage->hasChildren ) {
+				foreach ( $firstLevelPage['children'] as $secondaryPage ) {
+					if ( $secondaryPage instanceof Page && $secondaryPage->hasChildren ) {
+						// check if page has children and show first subpages
+						$firstHomeChildId = $this->getFirstHomeChildIdById( $secondaryPage->id );
+						if ($firstHomeChildId === intval($pageId)) {
+							return true;
+						}
+						// check if page is sub child and show first subpages
+						$subPageIds = $this->searchPageIds($secondaryPage->children);
+						if (in_array($pageId, $subPageIds)) {
 							return true;
 						}
 					}
@@ -820,26 +831,32 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$pagesTree = $this->pagesTreeFirstNavItem();
 		$out = '';
 
-		foreach ($pagesTree as $firstLevelPages) {
-			if ($firstLevelPages->hasChildren) {
-				foreach ($firstLevelPages['children'] as $secondaryPages) {
-
-					if ($secondaryPages instanceof Page && $secondaryPages->hasChildren) {
-						$firstHomeChildId = $this->getFirstHomeChildIdById($secondaryPages->id);
+		foreach ($pagesTree as $firstLevelPage) {
+			if ($firstLevelPage->hasChildren) {
+				foreach ($firstLevelPage['children'] as $secondaryPage) {
+					if ($secondaryPage instanceof Page && $secondaryPage->hasChildren) {
+						$firstHomeChildId = $this->getFirstHomeChildIdById($secondaryPage->id);
+						$subPageIds = $this->searchPageIds($secondaryPage->children);
 						$childrenSideBarCssClasses = 'sidebar-first-subpages sidebar-nav pw-secondary-nav';
 
-						if ($firstHomeChildId !== intval($pageId)) {
-							$childrenSideBarCssClasses .= ' sidebar-first-subpages--hidden';
+						// check if page has children and show first subpages
+						if ($firstHomeChildId === intval($pageId)) {
+							$childrenSideBarCssClasses .= ' sidebar-first-subpages--shown';
 						}
+						// check if page is sub child and show first subpages
+						if (in_array($pageId, $subPageIds)) {
+							$childrenSideBarCssClasses .= ' sidebar-first-subpages--shown';
+						}
+
 						$out .= "<ul id='child-pageid__$firstHomeChildId' class='$childrenSideBarCssClasses'>";
 
-						foreach ($secondaryPages['children'] as $tertiaryPages) {
+						foreach ($secondaryPage['children'] as $tertiaryPage) {
 							// TODO: ev. create method out of this (also used in renderPrimaryNavItems)
-							$icon     = isset( $tertiaryPages->template->pageLabelField ) ? $tertiaryPages->template->pageLabelField : '';
-							$editHref = '/processwire/page/edit/?id=' . $tertiaryPages['id'];
-							$out      .= "<li class='parent-page-$secondaryPages[id] page-$tertiaryPages[id] pw-page-second'>";
-							$out      .= "<a id='scnav-page-$tertiaryPages[id]' data-from='scnav-page-$tertiaryPages[id]' href='$editHref'>";
-							$out      .= "<i class='fa fa-lg pw-nav-icon fa-fw $icon'></i>$tertiaryPages[title]";
+							$icon     = isset( $tertiaryPage->template->pageLabelField ) ? $tertiaryPage->template->pageLabelField : '';
+							$editHref = '/processwire/page/edit/?id=' . $tertiaryPage['id'];
+							$out      .= "<li class='parent-page-$secondaryPage[id] page-$tertiaryPage[id] pw-page-second'>";
+							$out      .= "<a id='scnav-page-$tertiaryPage[id]' data-from='scnav-page-$tertiaryPage[id]' href='$editHref'>";
+							$out      .= "<i class='fa fa-lg pw-nav-icon fa-fw $icon'></i>$tertiaryPage[title]";
 							$out      .= "</a>";
 							$out      .= "</li>";
 						}
@@ -1059,6 +1076,29 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 	}
 
 	/**
+	 * Returns the first direct home child page or the home page
+	 *
+	 * @param Page $activePage
+	 *
+	 * @return Page
+	 *
+	 */
+	/*
+	protected function getSecondHomeChild( Page $activePage): Page {
+		$secondHomeChild = $activePage;
+		if ($secondHomeChild->parent->id === 1) {
+			return $secondHomeChild;
+		} else if (isset($secondHomeChild->parent->parent) && $secondHomeChild->parent->parent->id === 1) {
+			return $secondHomeChild;
+		} else if (isset($secondHomeChild->parent->parent)) {
+			return $this->getSecondHomeChild($secondHomeChild->parent->parent);
+		} else {
+			return $activePage;
+		}
+	}
+	*/
+
+	/**
 	 * Returns the first direct home child ID page or the home page ID
 	 *
 	 * @param Page $activePage
@@ -1085,6 +1125,44 @@ class AdminThemeCustomer3000 extends AdminThemeFramework implements Module, Conf
 		$activePage = $this->wire->pages->get($pageId);
 
 		return $this->getFirstHomeChild($activePage)->id;
+	}
+
+	/**
+	 * Returns the first direct home child ID page or the home page ID
+	 *
+	 * @param Page $activePage
+	 *
+	 * @return int
+	 *
+	 */
+	public function isSubChild($page, $pageId, $firstHomeChildId): bool {
+		if (isset($page->parent->parent->parent) && $pageId === $firstHomeChildId) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Returns the first direct home child ID page or the home page ID
+	 *
+	 * @param PageArray $pages
+	 *
+	 * @return array
+	 *
+	 */
+	public function searchPageIds( PageArray $pages): array {
+		$pageIds = [];
+
+		foreach ($pages as $page) {
+			$pageIds[] = $page->id;
+
+			if (!empty($page->children)) {
+				$pageIds = array_merge($pageIds, $this->searchPageIds($page->children));
+			}
+		}
+
+		return $pageIds;
 	}
 
 	/**

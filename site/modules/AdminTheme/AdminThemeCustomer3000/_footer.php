@@ -10,7 +10,7 @@ if(!defined("PROCESSWIRE")) die();
 
 ?>
 
-<footer id='pw-footer' class='uk-margin'>
+<footer id='pw-footer'>
 	<div class='pw-container uk-container uk-container-expand'>
 		<div class='uk-grid' uk-grid>
 			<div class='uk-width-1-3@m uk-flex-last@m uk-text-right@m uk-text-center'>
